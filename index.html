@@ -32,14 +32,14 @@ function generateChunk(startY, count, difficulty) {
   let y = startY;
   for (let i = 0; i < count; i++) {
     const r = Math.random(), d = Math.min(difficulty, 1);
-    if      (r < 0.12 * d) y = GROUND_BASE - 100 - Math.random() * 80;
-    else if (r < 0.25 * d) y = GROUND_BASE - 50  - Math.random() * 50;
-    else if (r < 0.35 * d) y = GROUND_BASE + 30  + Math.random() * 20;
+    if      (r < 0.12 * d) y = GROUND_BASE - 70 - Math.random() * 50;
+    else if (r < 0.25 * d) y = GROUND_BASE - 35 - Math.random() * 35;
+    else if (r < 0.35 * d) y = GROUND_BASE + 20 + Math.random() * 15;
     else if (r < 0.5)       y = GROUND_BASE;
     y = Math.max(GROUND_BASE - 160, Math.min(GROUND_BASE + 40, y));
     pts.push(y);
   }
-  for (let pass = 0; pass < 5; pass++)
+  for (let pass = 0; pass < 12; pass++)
     for (let i = 1; i < pts.length - 1; i++)
       pts[i] = (pts[i-1] + pts[i]*2 + pts[i+1]) / 4;
   return pts;
@@ -88,37 +88,37 @@ const PIT_DEPTH    = 130; // px below terrain surface to the spike floor
 //        flip=flip score multiplier, dbl=double jump
 const CAR_COLORS = [
   { name:'CYAN',    body:'#00e5ff',roof:'#00b8d4',glow:'#00e5ff',unlock:0,
-    perk:'BALANCED',         jump:5.0, spd:6,  acc:0.10, grav:1.00, inv:1.0, land:1.0, flip:1, dbl:false },
-  { name:'PINK',    body:'#ff44aa',roof:'#cc0077',glow:'#ff44aa',unlock:75,
-    perk:'HIGH JUMP',        jump:7.5, spd:5.5,acc:0.10, grav:1.00, inv:1.0, land:1.0, flip:1, dbl:false },
-  { name:'GREEN',   body:'#00ff55',roof:'#00bb33',glow:'#00ff55',unlock:150,
-    perk:'SPEED BOOST',      jump:5.0, spd:9,  acc:0.16, grav:1.00, inv:1.0, land:1.0, flip:1, dbl:false },
-  { name:'YELLOW',  body:'#ffee00',roof:'#ccbb00',glow:'#ffee00',unlock:225,
-    perk:'DOUBLE JUMP',      jump:5.0, spd:6,  acc:0.10, grav:1.00, inv:1.0, land:1.0, flip:1, dbl:true  },
-  { name:'ORANGE',  body:'#ff7700',roof:'#cc5500',glow:'#ff7700',unlock:300,
-    perk:'2x SHIELD',        jump:5.0, spd:6,  acc:0.10, grav:1.00, inv:2.0, land:1.0, flip:1, dbl:false },
-  { name:'RED',     body:'#ff2200',roof:'#cc1100',glow:'#ff2200',unlock:400,
-    perk:'NITRO',            jump:5.0, spd:11, acc:0.20, grav:1.00, inv:1.0, land:0.7, flip:1, dbl:false },
-  { name:'PURPLE',  body:'#aa00ff',roof:'#7700cc',glow:'#aa00ff',unlock:500,
-    perk:'FLOATY',           jump:6.0, spd:6,  acc:0.10, grav:0.55, inv:1.0, land:1.0, flip:1, dbl:false },
-  { name:'GOLD',    body:'#ffcc00',roof:'#bb8800',glow:'#ffdd44',unlock:600,
-    perk:'SOFT LANDING',     jump:5.0, spd:6,  acc:0.10, grav:1.00, inv:1.0, land:2.5, flip:1, dbl:false },
-  { name:'LIME',    body:'#aaff00',roof:'#77cc00',glow:'#aaff00',unlock:700,
-    perk:'3x FLIP SCORE',    jump:6.5, spd:6,  acc:0.10, grav:1.00, inv:1.0, land:1.0, flip:3, dbl:false },
-  { name:'MAGENTA', body:'#ff00cc',roof:'#cc0099',glow:'#ff00cc',unlock:800,
-    perk:'SPEED + SHIELD',   jump:5.0, spd:7.5,acc:0.13, grav:1.00, inv:1.5, land:1.0, flip:1, dbl:false },
-  { name:'WHITE',   body:'#eeeeff',roof:'#aaaacc',glow:'#ffffff',unlock:900,
-    perk:'SPEED + FLOAT',    jump:5.5, spd:8,  acc:0.13, grav:0.68, inv:1.0, land:1.0, flip:1, dbl:false },
-  { name:'TEAL',    body:'#00ffcc',roof:'#00bb99',glow:'#00ffcc',unlock:1000,
-    perk:'3x SHIELD',        jump:5.0, spd:6,  acc:0.10, grav:1.00, inv:3.0, land:1.0, flip:1, dbl:false },
-  { name:'CORAL',   body:'#ff6655',roof:'#cc3322',glow:'#ff6655',unlock:1200,
-    perk:'ROCKET',           jump:5.5, spd:12, acc:0.22, grav:1.00, inv:1.0, land:0.8, flip:1, dbl:false },
-  { name:'INDIGO',  body:'#5544ff',roof:'#3322cc',glow:'#5544ff',unlock:1500,
-    perk:'ACROBAT  4x FLIP', jump:7.0, spd:6,  acc:0.10, grav:0.85, inv:1.0, land:1.5, flip:4, dbl:true  },
-  { name:'SILVER',  body:'#aabbcc',roof:'#778899',glow:'#ccddee',unlock:2000,
-    perk:'LEGEND  ALL STATS',jump:6.5, spd:8,  acc:0.14, grav:0.80, inv:2.0, land:1.8, flip:2, dbl:true  },
-  { name:'DIAMOND', body:'#ccffff',roof:'#aaeeff',glow:'#ffffff',unlock:10000,
-    perk:'TRANSCENDENT',     jump:8.0, spd:13, acc:0.24, grav:0.60, inv:4.0, land:3.0, flip:5, dbl:true  },
+    perk:'BALANCED',              jump:5.0, spd:6,  acc:0.10, grav:1.00, inv:1.0, land:1.0, flip:1, dbl:false, mag:1.0 },
+  { name:'PINK',    body:'#ff44aa',roof:'#cc0077',glow:'#ff44aa',unlock:500,
+    perk:'HIGH JUMP',             jump:7.5, spd:5.5,acc:0.10, grav:1.00, inv:1.0, land:1.0, flip:1, dbl:false, mag:1.0 },
+  { name:'GREEN',   body:'#00ff55',roof:'#00bb33',glow:'#00ff55',unlock:1000,
+    perk:'SPEED BOOST',           jump:5.0, spd:9,  acc:0.16, grav:1.00, inv:1.0, land:1.0, flip:1, dbl:false, mag:1.0 },
+  { name:'YELLOW',  body:'#ffee00',roof:'#ccbb00',glow:'#ffee00',unlock:1500,
+    perk:'DOUBLE JUMP',           jump:5.0, spd:6,  acc:0.10, grav:1.00, inv:1.0, land:1.0, flip:1, dbl:true,  mag:1.0 },
+  { name:'ORANGE',  body:'#ff7700',roof:'#cc5500',glow:'#ff7700',unlock:2000,
+    perk:'2x SHIELD',             jump:5.0, spd:6,  acc:0.10, grav:1.00, inv:2.0, land:1.0, flip:1, dbl:false, mag:1.0 },
+  { name:'RED',     body:'#ff2200',roof:'#cc1100',glow:'#ff2200',unlock:2500,
+    perk:'NITRO',                 jump:5.0, spd:11, acc:0.20, grav:1.00, inv:1.0, land:0.7, flip:1, dbl:false, mag:1.0 },
+  { name:'PURPLE',  body:'#aa00ff',roof:'#7700cc',glow:'#aa00ff',unlock:3000,
+    perk:'FLOATY',                jump:6.0, spd:6,  acc:0.10, grav:0.55, inv:1.0, land:1.0, flip:1, dbl:false, mag:1.0 },
+  { name:'GOLD',    body:'#ffcc00',roof:'#bb8800',glow:'#ffdd44',unlock:3500,
+    perk:'SOFT LANDING + MAGNET', jump:5.0, spd:6,  acc:0.10, grav:1.00, inv:1.0, land:2.5, flip:1, dbl:false, mag:2.0 },
+  { name:'LIME',    body:'#aaff00',roof:'#77cc00',glow:'#aaff00',unlock:4000,
+    perk:'3x FLIP SCORE',         jump:6.5, spd:6,  acc:0.10, grav:1.00, inv:1.0, land:1.0, flip:3, dbl:false, mag:1.0 },
+  { name:'MAGENTA', body:'#ff00cc',roof:'#cc0099',glow:'#ff00cc',unlock:4500,
+    perk:'SPEED + SHIELD',        jump:5.0, spd:7.5,acc:0.13, grav:1.00, inv:1.5, land:1.0, flip:1, dbl:false, mag:1.0 },
+  { name:'WHITE',   body:'#eeeeff',roof:'#aaaacc',glow:'#ffffff',unlock:5000,
+    perk:'SPEED + FLOAT',         jump:5.5, spd:8,  acc:0.13, grav:0.68, inv:1.0, land:1.0, flip:1, dbl:false, mag:1.0 },
+  { name:'TEAL',    body:'#00ffcc',roof:'#00bb99',glow:'#00ffcc',unlock:5500,
+    perk:'3x SHIELD + MAGNET',    jump:5.0, spd:6,  acc:0.10, grav:1.00, inv:3.0, land:1.0, flip:1, dbl:false, mag:1.8 },
+  { name:'CORAL',   body:'#ff6655',roof:'#cc3322',glow:'#ff6655',unlock:6000,
+    perk:'ROCKET',                jump:5.5, spd:12, acc:0.22, grav:1.00, inv:1.0, land:0.8, flip:1, dbl:false, mag:1.0 },
+  { name:'INDIGO',  body:'#5544ff',roof:'#3322cc',glow:'#5544ff',unlock:6500,
+    perk:'ACROBAT  4x FLIP',      jump:7.0, spd:6,  acc:0.10, grav:0.85, inv:1.0, land:1.5, flip:4, dbl:true,  mag:1.0 },
+  { name:'SILVER',  body:'#aabbcc',roof:'#778899',glow:'#ccddee',unlock:7000,
+    perk:'LEGEND  ALL STATS',     jump:6.5, spd:8,  acc:0.14, grav:0.80, inv:2.0, land:1.8, flip:2, dbl:true,  mag:1.5 },
+  { name:'DIAMOND', body:'#ccffff',roof:'#aaeeff',glow:'#ffffff',unlock:7500,
+    perk:'TRANSCENDENT',          jump:8.0, spd:13, acc:0.24, grav:0.60, inv:4.0, land:3.0, flip:5, dbl:true,  mag:2.5 },
 ];
 
 // ─── State ───────────────────────────────────────────────────────────────────
@@ -132,10 +132,12 @@ let spinning, flipsInAir;
 let carH;            // current car height (normal or small)
 let isInvincible, invincibleTimer;
 let isMagnet, magnetTimer;
-const MAGNET_DUR   = 300; // frames (~5s)
-const MAGNET_RANGE = 300; // world-units attraction radius
+const MAGNET_DUR   = 540; // frames (~9s)
+const MAGNET_RANGE = 180; // world-units attraction radius
 let rainbowHue;
 let hasDoubleJump;
+let coyoteFrames = 0;  // frames after leaving ground where jump still allowed
+let jumpBuffer   = 0;  // frames a queued jump stays active before landing
 let flipPopup;
 
 let highScore    = parseInt(localStorage.getItem('neonDriverHigh') || '0');
@@ -278,6 +280,8 @@ function reset() {
   magnetTimer  = 0;
   rainbowHue      = 0;
   hasDoubleJump   = false;
+  coyoteFrames    = 0;
+  jumpBuffer      = 0;
   flipPopup       = null;
   enemyCars    = [];
   pits         = [];
@@ -324,11 +328,13 @@ document.addEventListener('keydown', e => {
   keys[e.code] = true;
   if (e.code === 'KeyM' && !gameOver) {
     const c = getCarStats(selectedCar);
-    if (onGround) {
-      carVY = -c.jump; onGround = false; flipsInAir = 0;
+    if (onGround || coyoteFrames > 0) {
+      carVY = -c.jump; onGround = false; coyoteFrames = 0; flipsInAir = 0;
       hasDoubleJump = c.dbl;
     } else if (hasDoubleJump) {
       carVY = -c.jump; hasDoubleJump = false;
+    } else {
+      jumpBuffer = 10; // queue the jump for up to 10 frames
     }
   }
   if (e.code === 'Space' && gameOver) {
@@ -903,6 +909,8 @@ function continueGame() {
   flipsInAir    = 0;
   spinning      = false;
   hasDoubleJump = false;
+  coyoteFrames  = 0;
+  jumpBuffer    = 0;
   speed         = 0;
   // Move back to safe ground if inside a pit
   let safeX = carWorldX;
@@ -913,7 +921,11 @@ function continueGame() {
   onGround  = true;
   countdown = { n: 3, timer: 62 };
   setTimeout(() => playCountdownBeep(false), 50);
-  startMusic();
+  // Grant invincibility on continue
+  isInvincible    = true;
+  invincibleTimer = Math.round(INVINCIBLE_DUR * getCarStats(selectedCar).inv * 1.5);
+  rainbowHue      = 0;
+  startInvMusic();
 }
 
 function update() {
@@ -977,9 +989,10 @@ function update() {
     speed = Math.min(speed + car.acc + slopeForce, car.spd);
   } else if (onGround) {
     speed += slopeForce;
-    // Friction only slows forward motion; backwards rolling accumulates freely
-    if (speed > BRAKE)  speed -= BRAKE;
-    else if (speed > 0) speed = 0;
+    // Friction applies in both directions — no endless coasting
+    if      (speed >  BRAKE) speed -= BRAKE;
+    else if (speed < -BRAKE) speed += BRAKE;
+    else                     speed  = 0;
   }
   if (onGround) speed = Math.max(speed, -4); // cap roll-back speed
   // Hard cap on near-vertical uphills — cannot wall-climb
@@ -1044,10 +1057,25 @@ function update() {
     carAngle = inPit ? 0 : slope;
     // In pit + invincible: sit on floor (can jump out). In pit + not invincible: already dead above.
     onGround = inPit ? isInvincible : true;
+    if (onGround) {
+      coyoteFrames = 0;
+      // Restore double jump as soon as car touches ground
+      hasDoubleJump = car.dbl;
+      // Fire buffered jump immediately on landing
+      if (jumpBuffer > 0) {
+        carVY = -car.jump; onGround = false; flipsInAir = 0;
+        hasDoubleJump = car.dbl;
+      }
+      jumpBuffer = 0;
+    }
   } else {
+    if (onGround) coyoteFrames = 8; // just left ground — grace window
     onGround = false;
     if (!wasAirborne) flipsInAir = 0;
   }
+  // Tick timers
+  if (coyoteFrames > 0) coyoteFrames--;
+  if (jumpBuffer   > 0) jumpBuffer--;
 
   if (carY > H + 100) { triggerGameOver('FELL OFF!'); return; }
 
@@ -1135,14 +1163,15 @@ function update() {
   if (isMagnet) {
     magnetTimer--;
     if (magnetTimer <= 0) isMagnet = false;
+    const effectiveMagRange = MAGNET_RANGE * getCarStats(selectedCar).mag;
     const carAbove = Math.max(0, groundYAtWorld(carWorldX) - carY - carH);
     for (const c of coins) {
       const dx   = carWorldX - c.worldX;
       const dist = Math.abs(dx);
-      if (dist < MAGNET_RANGE) {
-        const pull = 0.10 * (1 - dist / MAGNET_RANGE) + 0.02;
-        c.worldX += dx * pull;
-        c.above  += (carAbove - c.above) * pull * 0.4;
+      if (dist < effectiveMagRange) {
+        // Fast snap: coins rush straight to car
+        c.worldX += dx * 0.35;
+        c.above  += (carAbove - c.above) * 0.3;
       }
     }
   }
@@ -1213,23 +1242,23 @@ function glow(fn, color, blur) {
   ctx.shadowColor = color; ctx.shadowBlur = blur; fn(); ctx.shadowBlur = 0;
 }
 
+// 7-stage palette cycling every 1000 score: dark→green→yellow→orange→red→purple→inverted→(back to dark)
+const BG_PALETTES = [
+  { sky:[5,0,16],      cloud:[200,190,255], hill:[18,0,50],     fill:'#07001a', neon1:'#00ffff', neon2:'#0044aa', inv:false }, // 0 dark
+  { sky:[0,18,6],      cloud:[80,255,130],  hill:[0,30,8],      fill:'#001a07', neon1:'#00ff66', neon2:'#004422', inv:false }, // 1 green
+  { sky:[28,26,0],     cloud:[255,255,80],  hill:[48,38,0],     fill:'#1a1400', neon1:'#ffee00', neon2:'#554400', inv:false }, // 2 yellow
+  { sky:[28,10,0],     cloud:[255,150,60],  hill:[55,18,0],     fill:'#1a0800', neon1:'#ff8800', neon2:'#553300', inv:false }, // 3 orange
+  { sky:[24,0,0],      cloud:[255,80,60],   hill:[55,0,0],      fill:'#180000', neon1:'#ff2200', neon2:'#550000', inv:false }, // 4 red
+  { sky:[14,0,28],     cloud:[190,80,255],  hill:[28,0,55],     fill:'#0c0020', neon1:'#aa00ff', neon2:'#440088', inv:false }, // 5 purple
+  { sky:[235,228,255], cloud:[28,12,55],    hill:[195,185,225], fill:'#e0d8ff', neon1:'#330066', neon2:'#110033', inv:true  }, // 6 inverted
+];
+function getBgPalette() {
+  const stage = Math.floor(score / 1000) % 7;
+  return BG_PALETTES[stage];
+}
 function bgSkyColor() {
-  if (score >= 1000) {
-    const t = Math.min((score - 1000) / 500, 1);
-    // yellow -> orange
-    const r = Math.round(255);
-    const g = Math.round(200 - 140 * t);
-    const b = Math.round(20 - 20 * t);
-    return `rgb(${r},${g},${b})`;
-  } else if (score >= 500) {
-    const t = Math.min((score - 500) / 500, 1);
-    // dark -> yellow
-    const r = Math.round(5  + 250 * t);
-    const g = Math.round(0  + 200 * t);
-    const b = Math.round(16 +   4 * t - 16 * t);
-    return `rgb(${r},${g},${b})`;
-  }
-  return '#050010';
+  const p = getBgPalette();
+  return `rgb(${p.sky[0]},${p.sky[1]},${p.sky[2]})`;
 }
 
 function drawBg() {
@@ -1237,9 +1266,7 @@ function drawBg() {
   ctx.fillRect(0, 0, W, H);
 
   // ── Clouds ──
-  const cloudBase = score >= 1000 ? [255, 200, 140]
-                  : score >= 500  ? [255, 255, 200]
-                  : [200, 190, 255];
+  const cloudBase = getBgPalette().cloud;
   function drawCloud(cx, cy, bw, bh) {
     // flat ellipse body
     ctx.beginPath();
@@ -1275,10 +1302,8 @@ function drawBg() {
   }
 
   // ── Hills ──
-  const hillFill = score >= 1000 ? 'rgb(90,30,0)'
-                 : score >= 500  ? 'rgb(60,45,0)'
-                 : 'rgb(18,0,50)';
-  ctx.fillStyle = hillFill;
+  const _hc = getBgPalette().hill;
+  ctx.fillStyle = `rgb(${_hc[0]},${_hc[1]},${_hc[2]})`;
   for (const h of HILLS) {
     const hillPeak = GROUND_BASE - h.h * GROUND_BASE * 0.75;
     for (let tile = -1; tile <= 1; tile++) {
@@ -1334,7 +1359,8 @@ function drawTerrain() {
   ctx.lineTo(worldToScreen(terrainStartWorld + ei * SEG_W), H + 10);
   ctx.lineTo(worldToScreen(terrainStartWorld + si * SEG_W), H + 10);
   ctx.closePath();
-  ctx.fillStyle = '#07001a'; ctx.fill();
+  const _pal = getBgPalette();
+  ctx.fillStyle = _pal.fill; ctx.fill();
   ctx.restore();
 
   // Neon surface line — drawn up to exact pit edges so no gap at corners
@@ -1379,8 +1405,8 @@ function drawTerrain() {
       ctx.strokeStyle = color; ctx.lineWidth = width; ctx.stroke();
     }, glowColor, glowBlur);
   }
-  drawSurfaceLine(0, '#00ffff', 3, '#00ffff', 16);
-  drawSurfaceLine(4, '#0044aa', 2, '#0044ff',  6);
+  drawSurfaceLine(0, _pal.neon1, 3, _pal.neon1, 16);
+  drawSurfaceLine(4, _pal.neon2, 2, _pal.neon2,  6);
 }
 
 function drawEnemyCars() {
@@ -1832,6 +1858,7 @@ function drawShopOverlay() {
       { label: '\ud83d\udd04 FLIP', cur: current.flip, base: base.flip, max: 8,    higher: true  },
       { label: '\u23f1 INVINCIB.',  cur: current.inv,  base: base.inv,  max: 4,    higher: true  },
       { label: '\u2b07 GRAVITY',    cur: current.grav, base: base.grav, max: 1.2,  higher: false },
+      { label: '\u2295 MAGNET',     cur: current.mag,  base: base.mag,  max: 3.0,  higher: true  },
     ];
 
     ctx.textAlign = 'left';
@@ -2044,6 +2071,35 @@ function drawMenu() {
   ctx.textAlign = 'left';
 
   if (shopPanel) drawShopOverlay();
+}
+
+function drawMagnetRange() {
+  const effectiveMagRange = MAGNET_RANGE * getCarStats(selectedCar).mag;
+  const cx = CAR_SCREEN_X;
+  const cy = carY + carH / 2;
+  const numRings = 3;
+  const period   = 52; // frames for a ring to travel from edge to car
+
+  ctx.save();
+  ctx.setLineDash([7, 9]);
+  ctx.lineWidth = 1.8;
+  ctx.shadowColor = '#00ccff';
+  ctx.shadowBlur  = 10;
+
+  for (let r = 0; r < numRings; r++) {
+    // Each ring offset by 1/3 of the cycle so they're evenly spaced
+    const t = ((menuAnim + r * (period / numRings)) % period) / period; // 0→1
+    const radius = effectiveMagRange * (1 - t);
+    // Fade in at full radius, bright near the car
+    const alpha = 0.12 + 0.55 * (1 - t);
+    ctx.strokeStyle = `rgba(0,210,255,${alpha})`;
+    ctx.beginPath();
+    ctx.arc(cx, cy, Math.max(1, radius), 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  ctx.setLineDash([]);
+  ctx.restore();
 }
 
 function drawHUD() {
@@ -2270,6 +2326,7 @@ function draw() {
   drawCoins();
   drawEnemyCars();
   drawPowerups();
+  if (isMagnet && !gameOver) drawMagnetRange();
   if (!gameOver) drawCar();
   drawHUD();
   if (gameOver) drawGameOver();
