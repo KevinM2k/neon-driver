@@ -15,16 +15,17 @@
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 let W, H;
+let GROUND_BASE = 0; // set by resizeCanvas before first use
 function resizeCanvas() {
   W = canvas.width  = window.innerWidth;
   H = canvas.height = window.innerHeight;
+  GROUND_BASE = Math.round(H * 0.72);
 }
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
 // ─── Terrain ────────────────────────────────────────────────────────────────
 const SEG_W = 30;
-const GROUND_BASE = Math.round(H * 0.72);
 
 function generateChunk(startY, count, difficulty) {
   const pts = [];
@@ -998,14 +999,17 @@ function update() {
   distance  += speed;
   score      = Math.floor(distance / 10) + bonusScore;
 
-  // ── Pit wall collision: once inside a pit, car cannot exit through the vertical walls ──
+  // ── Pit wall collision: block escape only when actually inside the pit (not jumping over) ──
   const prevPit = pitAtWorld(prevWorldX);
   if (prevPit && !pitAtWorld(carWorldX)) {
-    // Car was in the pit but horizontal speed moved it past a wall — clamp it back
-    carWorldX = speed > 0
-      ? prevPit.worldX + prevPit.width / 2 - CAR_W * 0.35
-      : prevPit.worldX - prevPit.width / 2 + CAR_W * 0.35;
-    speed = 0;
+    const terrainAtPit = groundYAtWorld(prevWorldX);
+    // Only clamp if the car's bottom is at or below the terrain surface (falling in, not jumping over)
+    if (carY + carH > terrainAtPit - 4) {
+      carWorldX = speed > 0
+        ? prevPit.worldX + prevPit.width / 2 - CAR_W * 0.35
+        : prevPit.worldX - prevPit.width / 2 + CAR_W * 0.35;
+      speed = 0;
+    }
   }
 
   // ── Physics ──
@@ -1281,13 +1285,15 @@ function drawBg() {
       const ox = (h.x - hillOffset + tile * HILL_TILE + HILL_TILE) % (HILL_TILE * 2) - HILL_TILE;
       if (ox > W + h.w || ox + h.w < 0) continue;
       ctx.beginPath();
-      ctx.moveTo(ox, GROUND_BASE + 10);
+      ctx.moveTo(ox, H + 10);                              // bottom-left
+      ctx.lineTo(ox, GROUND_BASE + 10);                    // up to ground
       ctx.bezierCurveTo(ox + h.w * 0.2, hillPeak + h.h * 40,
                         ox + h.w * 0.4, hillPeak,
                         ox + h.w * 0.5, hillPeak);
       ctx.bezierCurveTo(ox + h.w * 0.6, hillPeak,
                         ox + h.w * 0.8, hillPeak + h.h * 40,
                         ox + h.w,       GROUND_BASE + 10);
+      ctx.lineTo(ox + h.w, H + 10);                        // down to bottom-right
       ctx.closePath();
       ctx.fill();
     }
@@ -1847,7 +1853,7 @@ function drawShopOverlay() {
       ctx.fillStyle = '#334';
       ctx.beginPath(); ctx.roundRect(barX + lw, y, (barW - lw) * pctBase, barH, 3); ctx.fill();
       // Current fill (bright if upgraded)
-      ctx.fillStyle = boosted ? car.glow : '#445566';
+      ctx.fillStyle = boosted ? '#00ff88' : '#3a5a6a';
       ctx.beginPath(); ctx.roundRect(barX + lw, y, (barW - lw) * pctCur, barH, 3); ctx.fill();
 
       // % change label if upgraded
@@ -2003,9 +2009,9 @@ function drawMenu() {
     ctx.font = '13px monospace'; ctx.fillStyle = '#aabbcc';
     ctx.fillText(cur.perk, mx, infoY + 24);
     if (lvl > 0) {
-      ctx.fillStyle = '#ffd700'; ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 6;
-      ctx.font = '16px monospace';
-      ctx.fillText('\u2605'.repeat(lvl) + '\u2606'.repeat(UPGRADE_MAX - lvl), mx, infoY + 46);
+      ctx.fillStyle = '#ffd700'; ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 8;
+      ctx.font = 'bold 22px monospace';
+      ctx.fillText('\u2605'.repeat(lvl) + '\u2606'.repeat(UPGRADE_MAX - lvl), mx, infoY + 52);
       ctx.shadowBlur = 0;
     }
   }
