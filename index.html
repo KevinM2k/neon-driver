@@ -1580,6 +1580,7 @@ function drawEnemyCars() {
 }
 
 function drawPits() {
+  const pal = getBgPalette();
   for (const p of pits) {
     const sx    = worldToScreen(p.worldX);
     const hw    = p.width / 2;
@@ -1589,21 +1590,26 @@ function drawPits() {
     const topY  = Math.min(gYL, gYR, gYC) - 6;
     const floor = gYC + PIT_DEPTH;
 
-    // Depth gradient inside pit (sky already visible through terrain clip hole)
+    // Depth gradient inside pit
     const depthGrad = ctx.createLinearGradient(0, topY, 0, floor);
     depthGrad.addColorStop(0, 'rgba(0,0,0,0)');
     depthGrad.addColorStop(1, 'rgba(0,0,0,0.72)');
     ctx.fillStyle = depthGrad;
     ctx.fillRect(sx - hw + 2, topY, p.width - 4, floor - topY);
 
-    // Terrain-coloured fill on the walls to blend with terrain body
-    ctx.fillStyle = '#07001a';
-    ctx.fillRect(sx - hw - 6, gYL, 8, floor - gYL + 10);
-    ctx.fillRect(sx + hw - 2, gYR, 8, floor - gYR + 10);
+    // Solid floor base — fills the gap between the neon floor line and the terrain
+    // polygon (which resumes 20px below floor), so spikes sit on a clean surface
+    ctx.fillStyle = pal.fill;
+    ctx.fillRect(sx - hw + 2, floor, p.width - 4, 24);
 
-    // Neon cliff edges (match terrain line style)
+    // Terrain-coloured fill on the walls to blend with terrain body
+    ctx.fillStyle = pal.fill;
+    ctx.fillRect(sx - hw - 6, gYL, 8, floor - gYL + 24);
+    ctx.fillRect(sx + hw - 2, gYR, 8, floor - gYR + 24);
+
+    // Neon cliff edges — colour matches the current world palette
     glow(() => {
-      ctx.strokeStyle = '#00ffff'; ctx.lineWidth = 3;
+      ctx.strokeStyle = pal.neon1; ctx.lineWidth = 3;
       // left wall
       ctx.beginPath();
       ctx.moveTo(sx - hw, gYL);
@@ -1619,7 +1625,7 @@ function drawPits() {
       ctx.moveTo(sx - hw, floor);
       ctx.lineTo(sx + hw, floor);
       ctx.stroke();
-    }, '#00ffff', 10);
+    }, pal.neon1, 10);
 
     // Spikes on the floor
     const spikeW  = 22;
@@ -2232,11 +2238,15 @@ function drawMenu() {
   }, '#ffd700', 10);
   clickables.push({ x: sbX, y: sbY, w: sbW, h: sbH, fn: () => { shopPanel = 'shop'; } });
 
-  // ── Controls hint ──
-  ctx.font = 'bold 12px monospace'; ctx.fillStyle = '#88aacc'; ctx.shadowBlur = 0;
-  ctx.textAlign = 'center';
-  if (!isMobile) ctx.fillText('SPACE = drive   M = jump   N (air) = spin', mx, H - 14);
-  ctx.textAlign = 'left';
+  // ── Controls hint (desktop only, bottom-right corner) ──
+  if (!isMobile) {
+    ctx.font = '12px monospace'; ctx.fillStyle = '#445566'; ctx.shadowBlur = 0;
+    ctx.textAlign = 'right';
+    ctx.fillText('SPACE = drive', W - 16, H - 38);
+    ctx.fillText('M = jump', W - 16, H - 24);
+    ctx.fillText('N (air) = spin', W - 16, H - 10);
+    ctx.textAlign = 'left';
+  }
 
   if (shopPanel) drawShopOverlay();
 }
