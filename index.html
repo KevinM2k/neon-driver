@@ -2238,14 +2238,13 @@ function drawMenu() {
   }, '#ffd700', 10);
   clickables.push({ x: sbX, y: sbY, w: sbW, h: sbH, fn: () => { shopPanel = 'shop'; } });
 
-  // ── Controls hint (desktop only, bottom-right corner) ──
+  // ── Controls hint (desktop only, bottom-left corner) ──
   if (!isMobile) {
     ctx.font = '12px monospace'; ctx.fillStyle = '#445566'; ctx.shadowBlur = 0;
-    ctx.textAlign = 'right';
-    ctx.fillText('SPACE = drive', W - 16, H - 38);
-    ctx.fillText('M = jump', W - 16, H - 24);
-    ctx.fillText('N (air) = spin', W - 16, H - 10);
     ctx.textAlign = 'left';
+    ctx.fillText('SPACE = drive', 16, H - 38);
+    ctx.fillText('M = jump', 16, H - 24);
+    ctx.fillText('N (air) = spin', 16, H - 10);
   }
 
   if (shopPanel) drawShopOverlay();
