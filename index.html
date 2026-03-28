@@ -1063,7 +1063,7 @@ function continueGame() {
   startInvMusic();
 }
 
-function update() {
+function update(dt = 1) {
   if (gameState !== 'playing') return;
 
   // ── Countdown ──
@@ -1121,19 +1121,19 @@ function update() {
 
   // ── Drive ──
   if (keys['Space']) {
-    speed = Math.min(speed + car.acc + slopeForce, car.spd);
+    speed = Math.min(speed + (car.acc + slopeForce) * dt, car.spd);
   } else if (onGround) {
-    speed += slopeForce;
-    // Friction applies in both directions — no endless coasting
-    if      (speed >  BRAKE) speed -= BRAKE;
-    else if (speed < -BRAKE) speed += BRAKE;
-    else                     speed  = 0;
+    speed += slopeForce * dt;
+    const brk = BRAKE * dt;
+    if      (speed >  brk) speed -= brk;
+    else if (speed < -brk) speed += brk;
+    else                   speed  = 0;
   } else {
     // Air drag — gentle deceleration when not boosting
-    const AIR_DRAG = 0.025;
-    if      (speed >  AIR_DRAG) speed -= AIR_DRAG;
-    else if (speed < -AIR_DRAG) speed += AIR_DRAG;
-    else                        speed  = 0;
+    const drag = 0.025 * dt;
+    if      (speed >  drag) speed -= drag;
+    else if (speed < -drag) speed += drag;
+    else                    speed  = 0;
   }
   if (onGround) speed = Math.max(speed, -4); // cap roll-back speed
   // Hard cap on near-vertical uphills — cannot wall-climb
@@ -1142,15 +1142,15 @@ function update() {
   // ── Spin ──
   if (keys['KeyN'] && !onGround) {
     const prev = carAngle;
-    carAngle -= SPIN_RATE;
+    carAngle -= SPIN_RATE * dt;
     spinning = true;
     if (Math.floor(-carAngle / (Math.PI*2)) > Math.floor(-prev / (Math.PI*2))) flipsInAir++;
   } else { spinning = false; }
 
   // ── Move ──
   const prevWorldX = carWorldX;
-  carWorldX += speed;
-  distance  += speed;
+  carWorldX += speed * dt;
+  distance  += speed * dt;
   score      = Math.floor(distance / 10) + bonusScore;
 
   // ── Pit wall collision: block escape only when actually inside the pit (not jumping over) ──
@@ -1169,8 +1169,8 @@ function update() {
   // ── Physics ──
   const inPit      = pitAtWorld(carWorldX);
   const effGroundY = effectiveGroundY(carWorldX);
-  carVY += GRAVITY * car.grav;
-  carY  += carVY;
+  carVY += GRAVITY * car.grav * dt;
+  carY  += carVY * dt;
 
   const groundTop   = effGroundY - carH;
   const wasAirborne = !onGround;
@@ -1306,9 +1306,11 @@ function update() {
     if (magnetTimer <= 0) isMagnet = false;
     const effectiveMagRange = MAGNET_RANGE * getCarStats(selectedCar).mag;
     const carAbove = Math.max(0, groundYAtWorld(carWorldX) - carY - carH);
+    const carCY = carY + carH / 2;
     for (const c of coins) {
       const dx   = carWorldX - c.worldX;
-      const dist = Math.abs(dx);
+      const dy   = carCY - (groundYAtWorld(c.worldX) - c.above);
+      const dist = Math.sqrt(dx * dx + dy * dy);
       if (dist < effectiveMagRange) {
         // Fast snap: coins rush straight to car
         c.worldX += dx * 0.35;
@@ -2009,6 +2011,7 @@ function drawShopOverlay() {
       { label: '\u23f1 INVINCIB.',  cur: current.inv,  base: base.inv,  max: 4,    higher: true  },
       { label: '\u2b07 GRAVITY',    cur: current.grav, base: base.grav, max: 1.2,  higher: false },
       { label: '\u2295 MAGNET',     cur: current.mag,  base: base.mag,  max: 3.0,  higher: true  },
+      { label: '\ud83e\udeb6 LANDING', cur: current.land, base: base.land, max: 4.0, higher: true },
     ];
 
     ctx.textAlign = 'left';
@@ -2048,7 +2051,7 @@ function drawShopOverlay() {
   }
 
   // ── Upgrade button ──
-  const btnY = locked ? starsY + 30 : starsY + 24 + 5 * 28 + 18;
+  const btnY = locked ? starsY + 30 : starsY + 24 + 7 * 28 + 18;
   if (!locked) {
     if (maxed) {
       neonBtn('MAX  \u2605\u2605\u2605\u2605\u2605', mx, btnY, 260, 44, '#2a6a2a', () => {}, false);
@@ -2092,10 +2095,11 @@ function drawMenu() {
 
   // ── Title ──
   ctx.textAlign = 'center';
-  glow(() => {
-    ctx.font = 'bold 54px monospace'; ctx.fillStyle = '#00ffff';
-    ctx.fillText('NEON DRIVER', mx, 64);
-  }, '#00ffff', 24);
+  ctx.shadowColor = '#00ffff'; ctx.shadowBlur = 28;
+  ctx.font = 'bold 54px monospace'; ctx.fillStyle = '#00ffff';
+  ctx.fillText('NEON DRIVER', mx, 64);
+  ctx.fillText('NEON DRIVER', mx, 64); // double-draw to intensify glow
+  ctx.shadowBlur = 0;
 
   // ── Best + coins ──
   ctx.font = '15px monospace';
@@ -2170,7 +2174,7 @@ function drawMenu() {
   const cur    = CAR_COLORS[selectedCar];
   const locked = cur.unlock > highScore;
   const lvl    = carUpgrades[selectedCar] || 0;
-  const infoY  = carRowY + Math.round(CAR_H_NORM * 2.2 * 0.5) + 28;
+  const infoY  = carRowY + Math.round(CAR_H_NORM * 2.2 * 0.5) + 48;
 
   ctx.textAlign = 'center'; ctx.shadowBlur = 0;
   if (locked) {
@@ -2193,11 +2197,13 @@ function drawMenu() {
     }
   }
 
-  // ── Play button ──
-  const playY = infoY + (lvl > 0 ? 72 : 52);
+  // ── Play button (anchored near bottom) ──
+  const shopBtnH = 44, playBtnH = isMobile ? 54 : 44;
+  const shopBtnY = H - 18 - shopBtnH;
+  const playBtnY = shopBtnY - playBtnH - 12;
   if (!locked) {
-    const pbW = isMobile ? 200 : 180, pbH = isMobile ? 54 : 44;
-    const pbX = mx - pbW / 2, pbY = playY - pbH + 4;
+    const pbW = isMobile ? 200 : 180, pbH = playBtnH;
+    const pbX = mx - pbW / 2, pbY = playBtnY;
     glow(() => {
       ctx.fillStyle = '#003322';
       ctx.strokeStyle = '#00ff99'; ctx.lineWidth = 2;
@@ -2214,8 +2220,8 @@ function drawMenu() {
     }});
   }
 
-  // ── SHOP button (below play prompt) ──
-  const sbW = 160, sbH = 38, sbX = mx - sbW/2, sbY = playY + 22;
+  // ── SHOP button (anchored near bottom, below PLAY) ──
+  const sbW = 160, sbH = shopBtnH, sbX = mx - sbW/2, sbY = shopBtnY;
   glow(() => {
     ctx.fillStyle = '#0a0020';
     ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 2;
@@ -2512,14 +2518,17 @@ function draw() {
 }
 
 // ─── Loop ────────────────────────────────────────────────────────────────────
-function loop() {
+let _lastLoopTime = 0;
+function loop(now) {
+  const dt = _lastLoopTime ? Math.min((now - _lastLoopTime) / 16.667, 2.5) : 1;
+  _lastLoopTime = now;
   clickables = [];
   const scroll = (gameState === 'playing' && !gameOver) ? speed : 0.9;
   hillOffset  = (hillOffset  + scroll * 0.18) % HILL_TILE;
   cloudOffset = (cloudOffset + scroll * 0.07) % CLOUD_TILE;
   menuAnim    = (menuAnim + 1) % 10000;
   try {
-    update();
+    update(dt);
     draw();
   } catch (e) {
     console.error('Neon Driver loop error:', e);
