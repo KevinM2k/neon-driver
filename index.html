@@ -1128,6 +1128,12 @@ function update() {
     if      (speed >  BRAKE) speed -= BRAKE;
     else if (speed < -BRAKE) speed += BRAKE;
     else                     speed  = 0;
+  } else {
+    // Air drag — gentle deceleration when not boosting
+    const AIR_DRAG = 0.025;
+    if      (speed >  AIR_DRAG) speed -= AIR_DRAG;
+    else if (speed < -AIR_DRAG) speed += AIR_DRAG;
+    else                        speed  = 0;
   }
   if (onGround) speed = Math.max(speed, -4); // cap roll-back speed
   // Hard cap on near-vertical uphills — cannot wall-climb
@@ -1415,12 +1421,16 @@ function drawBg() {
       const ox = (c.x - cloudOffset + tile * CLOUD_TILE + CLOUD_TILE * 10) % CLOUD_TILE;
       if (ox - c.bw > W || ox + c.bw < 0) continue;
 
-      // soft gradient fill — bright centre, fade at edges
-      const grad = ctx.createRadialGradient(ox, cy - c.bh * 0.1, 0, ox, cy, c.bw * 0.6);
-      grad.addColorStop(0,   `rgba(${cloudBase[0]},${cloudBase[1]},${cloudBase[2]},0.85)`);
-      grad.addColorStop(0.6, `rgba(${cloudBase[0]},${cloudBase[1]},${cloudBase[2]},0.55)`);
-      grad.addColorStop(1,   `rgba(${cloudBase[0]},${cloudBase[1]},${cloudBase[2]},0)`);
-      ctx.fillStyle = grad;
+      if (isMobile) {
+        // Flat fill on mobile — no radial gradient
+        ctx.fillStyle = `rgba(${cloudBase[0]},${cloudBase[1]},${cloudBase[2]},0.55)`;
+      } else {
+        const grad = ctx.createRadialGradient(ox, cy - c.bh * 0.1, 0, ox, cy, c.bw * 0.6);
+        grad.addColorStop(0,   `rgba(${cloudBase[0]},${cloudBase[1]},${cloudBase[2]},0.85)`);
+        grad.addColorStop(0.6, `rgba(${cloudBase[0]},${cloudBase[1]},${cloudBase[2]},0.55)`);
+        grad.addColorStop(1,   `rgba(${cloudBase[0]},${cloudBase[1]},${cloudBase[2]},0)`);
+        ctx.fillStyle = grad;
+      }
 
       // body
       ctx.beginPath();
@@ -1775,11 +1785,15 @@ function drawCoins() {
 
     glow(() => {
       // Coin body
-      const grad = ctx.createRadialGradient(sx - 3, coinY + bob - 3, 1, sx, coinY + bob, r);
-      grad.addColorStop(0, '#ffffff');
-      grad.addColorStop(0.35, c.type.color);
-      grad.addColorStop(1, c.type.glow);
-      ctx.fillStyle = grad;
+      if (isMobile) {
+        ctx.fillStyle = c.type.color;
+      } else {
+        const grad = ctx.createRadialGradient(sx - 3, coinY + bob - 3, 1, sx, coinY + bob, r);
+        grad.addColorStop(0, '#ffffff');
+        grad.addColorStop(0.35, c.type.color);
+        grad.addColorStop(1, c.type.glow);
+        ctx.fillStyle = grad;
+      }
       ctx.beginPath(); ctx.arc(sx, coinY + bob, r, 0, Math.PI * 2); ctx.fill();
       // Value label
       ctx.fillStyle = '#000';
@@ -2391,8 +2405,20 @@ function drawGameOver() {
   }, canContinue ? '#44ff44' : 'transparent', canContinue ? 12 : 0);
   if (canContinue) clickables.push({ x: cbX, y: cbY, w: cbW, h: cbH, fn: continueGame });
 
-  ctx.font = '14px monospace'; ctx.fillStyle = '#555'; ctx.shadowBlur = 0;
-  ctx.fillText('SPACE  for menu', W/2, H/2 + 132);
+  if (isMobile) {
+    const mbW = 200, mbH = 50, mbX = W/2 - mbW/2, mbY = H/2 + 118;
+    ctx.fillStyle = '#1a0010'; ctx.strokeStyle = '#ff88ff'; ctx.lineWidth = 2;
+    ctx.shadowBlur = 0;
+    ctx.beginPath(); ctx.roundRect(mbX, mbY, mbW, mbH, 8); ctx.fill(); ctx.stroke();
+    ctx.font = 'bold 18px monospace'; ctx.fillStyle = '#ff88ff';
+    ctx.fillText('MENU', W/2, mbY + 32);
+    clickables.push({ x: mbX, y: mbY, w: mbW, h: mbH, fn: () => {
+      stopMusic(); stopInvMusic(); gameState = 'menu'; gameOver = false;
+    }});
+  } else {
+    ctx.font = '14px monospace'; ctx.fillStyle = '#555'; ctx.shadowBlur = 0;
+    ctx.fillText('SPACE  for menu', W/2, H/2 + 132);
+  }
   ctx.textAlign = 'left';
 }
 
@@ -2484,7 +2510,14 @@ function draw() {
 }
 
 // ─── Loop ────────────────────────────────────────────────────────────────────
-function loop() {
+let _lastFrameTime = 0;
+const MOBILE_FRAME_MS = 1000 / 30; // target 30fps on mobile
+
+function loop(now) {
+  if (isMobile) {
+    if (now - _lastFrameTime < MOBILE_FRAME_MS) { requestAnimationFrame(loop); return; }
+    _lastFrameTime = now;
+  }
   clickables = [];
   const scroll = (gameState === 'playing' && !gameOver) ? speed : 0.9;
   hillOffset  = (hillOffset  + scroll * 0.18) % HILL_TILE;
