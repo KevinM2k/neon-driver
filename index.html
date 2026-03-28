@@ -154,6 +154,9 @@ const CAR_COLORS = [
     perk:'TRANSCENDENT',          jump:8.0, spd:13, acc:0.24, grav:0.60, inv:4.0, land:3.0, flip:5, dbl:true,  mag:2.5 },
 ];
 
+// ─── Mobile flag ─────────────────────────────────────────────────────────────
+let isMobile = false; // set true on first touch — disables expensive shadow/glow effects
+
 // ─── State ───────────────────────────────────────────────────────────────────
 let carWorldX, carY, carVY, carAngle, onGround;
 let speed = 0, distance = 0, score = 0, bonusScore = 0;
@@ -390,34 +393,63 @@ canvas.addEventListener('click', e => {
 });
 
 // ─── Touch support ───────────────────────────────────────────────────────────
-// Show on-screen buttons only on touch devices
+// Show on-screen buttons + enable mobile mode on first touch
 window.addEventListener('touchstart', () => {
+  isMobile = true;
   document.getElementById('touch-btns').style.display = 'flex';
 }, { once: true });
 
-// Touching the canvas (not the buttons) = hold Space (accelerate/start)
+// Canvas touch: accelerate while held during gameplay; tap = clickable in menu/game-over
 const touchIds = new Set();
+let touchStartX = 0, touchStartY = 0;
+
 canvas.addEventListener('touchstart', e => {
   ensureAudio();
   e.preventDefault();
   for (const t of e.changedTouches) touchIds.add(t.identifier);
-  if (touchIds.size > 0) {
-    if (gameState === 'menu') {
-      if (CAR_COLORS[selectedCar].unlock <= highScore) {
-        reset(); gameState = 'playing'; startMusic();
-      }
-    } else if (gameOver) {
-      stopMusic(); stopInvMusic(); gameState = 'menu'; gameOver = false;
-    } else {
-      keys['Space'] = true;
-    }
+  if (e.changedTouches.length > 0) {
+    touchStartX = e.changedTouches[0].clientX;
+    touchStartY = e.changedTouches[0].clientY;
+  }
+  if (gameState === 'playing' && !gameOver) {
+    keys['Space'] = true;
   }
 }, { passive: false });
+
 canvas.addEventListener('touchend', e => {
   e.preventDefault();
   for (const t of e.changedTouches) touchIds.delete(t.identifier);
   if (touchIds.size === 0) keys['Space'] = false;
+
+  // Detect tap (little movement) and fire clickables
+  if (e.changedTouches.length > 0) {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    const dy = e.changedTouches[0].clientY - touchStartY;
+    const isTap = Math.abs(dx) < 12 && Math.abs(dy) < 12;
+
+    if (isTap) {
+      if (gameState === 'menu' || gameOver) {
+        const rect = canvas.getBoundingClientRect();
+        const tx = (e.changedTouches[0].clientX - rect.left) * (W / rect.width);
+        const ty = (e.changedTouches[0].clientY - rect.top)  * (H / rect.height);
+        for (const btn of clickables) {
+          if (tx >= btn.x && tx <= btn.x + btn.w && ty >= btn.y && ty <= btn.y + btn.h) {
+            btn.fn(); break;
+          }
+        }
+      }
+    } else if (gameState === 'menu' && Math.abs(dx) > 40 && Math.abs(dy) < 60) {
+      // Swipe left/right to navigate cars
+      if (dx < 0) {
+        selectedCar = (selectedCar + 1) % CAR_COLORS.length;
+      } else {
+        selectedCar = (selectedCar - 1 + CAR_COLORS.length) % CAR_COLORS.length;
+      }
+      localStorage.setItem('neonDriverCar', selectedCar);
+    }
+  }
 }, { passive: false });
+
 canvas.addEventListener('touchcancel', e => {
   e.preventDefault();
   for (const t of e.changedTouches) touchIds.delete(t.identifier);
@@ -1342,6 +1374,7 @@ function update() {
 
 // ─── Draw ────────────────────────────────────────────────────────────────────
 function glow(fn, color, blur) {
+  if (isMobile) { fn(); return; }
   ctx.shadowColor = color; ctx.shadowBlur = blur; fn(); ctx.shadowBlur = 0;
 }
 
@@ -2146,13 +2179,25 @@ function drawMenu() {
     }
   }
 
-  // ── Play prompt ──
+  // ── Play button ──
   const playY = infoY + (lvl > 0 ? 72 : 52);
   if (!locked) {
+    const pbW = isMobile ? 200 : 180, pbH = isMobile ? 54 : 44;
+    const pbX = mx - pbW / 2, pbY = playY - pbH + 4;
     glow(() => {
-      ctx.font = 'bold 20px monospace'; ctx.fillStyle = '#00ff99';
-      ctx.fillText('SPACE  to play', mx, playY);
+      ctx.fillStyle = '#003322';
+      ctx.strokeStyle = '#00ff99'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.roundRect(pbX, pbY, pbW, pbH, 8); ctx.fill(); ctx.stroke();
+      ctx.font = `bold ${isMobile ? 22 : 20}px monospace`; ctx.fillStyle = '#00ff99';
+      ctx.textAlign = 'center';
+      ctx.fillText(isMobile ? 'PLAY' : 'SPACE / TAP', mx, pbY + pbH * 0.65);
+      ctx.textAlign = 'left';
     }, '#00ff99', 12);
+    clickables.push({ x: pbX, y: pbY, w: pbW, h: pbH, fn: () => {
+      if (CAR_COLORS[selectedCar].unlock <= highScore) {
+        reset(); gameState = 'playing'; startMusic();
+      }
+    }});
   }
 
   // ── SHOP button (below play prompt) ──
@@ -2170,7 +2215,7 @@ function drawMenu() {
   // ── Controls hint ──
   ctx.font = 'bold 12px monospace'; ctx.fillStyle = '#88aacc'; ctx.shadowBlur = 0;
   ctx.textAlign = 'center';
-  ctx.fillText('SPACE = drive   M = jump   N (air) = spin', mx, H - 14);
+  ctx.fillText(isMobile ? 'HOLD screen = drive   JUMP / SPIN buttons on left' : 'SPACE = drive   M = jump   N (air) = spin', mx, H - 14);
   ctx.textAlign = 'left';
 
   if (shopPanel) drawShopOverlay();
@@ -2206,14 +2251,15 @@ function drawMagnetRange() {
 }
 
 function drawHUD() {
+  const _sb = isMobile ? 0 : 10;
   ctx.font = 'bold 18px monospace';
-  ctx.fillStyle = '#00ffff'; ctx.shadowColor = '#00ffff'; ctx.shadowBlur = 10;
+  ctx.fillStyle = '#00ffff'; ctx.shadowColor = '#00ffff'; ctx.shadowBlur = _sb;
   ctx.fillText(`SCORE: ${score}`, 20, 34);
   ctx.fillText(`SPEED: ${Math.floor(speed * 12)}`, 20, 56);
   ctx.fillStyle = '#ff88ff'; ctx.shadowColor = '#ff88ff';
   ctx.fillText(`BEST: ${highScore}`, 20, 78);
   // Currency
-  ctx.fillStyle = '#ffd700'; ctx.shadowColor = '#ffee00'; ctx.shadowBlur = 10;
+  ctx.fillStyle = '#ffd700'; ctx.shadowColor = '#ffee00'; ctx.shadowBlur = _sb;
   ctx.fillText(`\u25CF ${currency}`, 20, 100);
   ctx.shadowBlur = 0;
 
@@ -2261,12 +2307,12 @@ function drawHUD() {
   if (!onGround && !gameOver) {
     ctx.textAlign = 'center';
     if (flipsInAir > 0) {
-      ctx.fillStyle = '#ff00ff'; ctx.shadowColor = '#ff00ff'; ctx.shadowBlur = 14;
+      ctx.fillStyle = '#ff00ff'; ctx.shadowColor = '#ff00ff'; ctx.shadowBlur = isMobile ? 0 : 14;
       ctx.font = 'bold 13px monospace';
       ctx.fillText(`${flipsInAir}× FLIP`, CAR_SCREEN_X, carY - 22);
     }
     if (spinning) {
-      ctx.fillStyle = '#ffff00'; ctx.shadowColor = '#ffff00'; ctx.shadowBlur = 10;
+      ctx.fillStyle = '#ffff00'; ctx.shadowColor = '#ffff00'; ctx.shadowBlur = isMobile ? 0 : 10;
       ctx.font = 'bold 12px monospace';
       ctx.fillText('SPIN', CAR_SCREEN_X, carY - 8);
     }
@@ -2320,13 +2366,13 @@ function drawGameOver() {
   ctx.fillStyle = 'rgba(0,0,0,0.72)'; ctx.fillRect(0, 0, W, H);
   ctx.textAlign = 'center';
   ctx.font = 'bold 44px monospace';
-  ctx.fillStyle = '#ff0055'; ctx.shadowColor = '#ff0055'; ctx.shadowBlur = 30;
+  ctx.fillStyle = '#ff0055'; ctx.shadowColor = '#ff0055'; ctx.shadowBlur = isMobile ? 0 : 30;
   ctx.fillText('WIPEOUT', W/2, H/2 - 54);
   ctx.font = 'bold 22px monospace';
-  ctx.fillStyle = '#ffaa00'; ctx.shadowColor = '#ffaa00'; ctx.shadowBlur = 15;
+  ctx.fillStyle = '#ffaa00'; ctx.shadowColor = '#ffaa00'; ctx.shadowBlur = isMobile ? 0 : 15;
   ctx.fillText(gameOverReason, W/2, H/2 - 16);
   ctx.font = '18px monospace';
-  ctx.fillStyle = '#00ffff'; ctx.shadowColor = '#00ffff'; ctx.shadowBlur = 10;
+  ctx.fillStyle = '#00ffff'; ctx.shadowColor = '#00ffff'; ctx.shadowBlur = isMobile ? 0 : 10;
   ctx.fillText(`SCORE: ${score}`, W/2, H/2 + 22);
   ctx.fillStyle = '#ff88ff'; ctx.shadowColor = '#ff88ff';
   ctx.fillText(`BEST: ${highScore}`, W/2, H/2 + 46);
@@ -2383,7 +2429,8 @@ function draw() {
 
   for (const p of particles) {
     ctx.globalAlpha = Math.max(0, p.life);
-    ctx.fillStyle = p.color; ctx.shadowColor = p.color; ctx.shadowBlur = 8;
+    ctx.fillStyle = p.color;
+    if (!isMobile) { ctx.shadowColor = p.color; ctx.shadowBlur = 8; }
     ctx.fillRect(p.x - 2, p.y - 2, 5, 5);
   }
   ctx.globalAlpha = 1; ctx.shadowBlur = 0;
