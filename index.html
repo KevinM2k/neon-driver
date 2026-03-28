@@ -2512,14 +2512,7 @@ function draw() {
 }
 
 // ─── Loop ────────────────────────────────────────────────────────────────────
-let _lastFrameTime = 0;
-const MOBILE_FRAME_MS = 1000 / 30; // target 30fps on mobile
-
-function loop(now) {
-  if (isMobile) {
-    if (now - _lastFrameTime < MOBILE_FRAME_MS) { requestAnimationFrame(loop); return; }
-    _lastFrameTime = now;
-  }
+function loop() {
   clickables = [];
   const scroll = (gameState === 'playing' && !gameOver) ? speed : 0.9;
   hillOffset  = (hillOffset  + scroll * 0.18) % HILL_TILE;
