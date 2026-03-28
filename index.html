@@ -2,15 +2,48 @@
 <html>
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 <title>Neon Driver</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { background: #000; overflow: hidden; }
   canvas { display: block; position: fixed; top: 0; left: 0; }
+  #touch-btns {
+    display: none;
+    position: fixed;
+    bottom: 28px;
+    left: 18px;
+    z-index: 10;
+    gap: 14px;
+    flex-direction: column;
+    pointer-events: none;
+  }
+  .tbtn {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 3px solid;
+    background: rgba(0,0,0,0.55);
+    font: bold 13px monospace;
+    letter-spacing: 1px;
+    cursor: pointer;
+    pointer-events: auto;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #btn-jump { border-color: #00e5ff; color: #00e5ff; text-shadow: 0 0 8px #00e5ff; box-shadow: 0 0 14px #00e5ff55; }
+  #btn-spin { border-color: #ff00ff; color: #ff00ff; text-shadow: 0 0 8px #ff00ff; box-shadow: 0 0 14px #ff00ff55; }
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
+<div id="touch-btns">
+  <div class="tbtn" id="btn-jump">JUMP</div>
+  <div class="tbtn" id="btn-spin">SPIN</div>
+</div>
 <script>
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
@@ -355,6 +388,76 @@ canvas.addEventListener('click', e => {
     }
   }
 });
+
+// ─── Touch support ───────────────────────────────────────────────────────────
+// Show on-screen buttons only on touch devices
+window.addEventListener('touchstart', () => {
+  document.getElementById('touch-btns').style.display = 'flex';
+}, { once: true });
+
+// Touching the canvas (not the buttons) = hold Space (accelerate/start)
+const touchIds = new Set();
+canvas.addEventListener('touchstart', e => {
+  ensureAudio();
+  e.preventDefault();
+  for (const t of e.changedTouches) touchIds.add(t.identifier);
+  if (touchIds.size > 0) {
+    if (gameState === 'menu') {
+      if (CAR_COLORS[selectedCar].unlock <= highScore) {
+        reset(); gameState = 'playing'; startMusic();
+      }
+    } else if (gameOver) {
+      stopMusic(); stopInvMusic(); gameState = 'menu'; gameOver = false;
+    } else {
+      keys['Space'] = true;
+    }
+  }
+}, { passive: false });
+canvas.addEventListener('touchend', e => {
+  e.preventDefault();
+  for (const t of e.changedTouches) touchIds.delete(t.identifier);
+  if (touchIds.size === 0) keys['Space'] = false;
+}, { passive: false });
+canvas.addEventListener('touchcancel', e => {
+  e.preventDefault();
+  for (const t of e.changedTouches) touchIds.delete(t.identifier);
+  if (touchIds.size === 0) keys['Space'] = false;
+}, { passive: false });
+
+// Jump button
+function doJump() {
+  ensureAudio();
+  if (gameState !== 'playing' || gameOver) return;
+  const c = getCarStats(selectedCar);
+  if (onGround || coyoteFrames > 0) {
+    carVY = -c.jump; onGround = false; coyoteFrames = 0; flipsInAir = 0;
+    hasDoubleJump = c.dbl;
+  } else if (hasDoubleJump) {
+    carVY = -c.jump; hasDoubleJump = false;
+  } else {
+    jumpBuffer = 10;
+  }
+}
+
+// Button helper
+function setupBtn(id, onDown, onUp) {
+  const el = document.getElementById(id);
+  el.addEventListener('touchstart', e => { e.preventDefault(); e.stopPropagation(); ensureAudio(); onDown(); }, { passive: false });
+  el.addEventListener('touchend',   e => { e.preventDefault(); e.stopPropagation(); onUp(); }, { passive: false });
+  el.addEventListener('touchcancel',e => { e.preventDefault(); e.stopPropagation(); onUp(); }, { passive: false });
+  el.addEventListener('mousedown',  e => { e.preventDefault(); onDown(); });
+  el.addEventListener('mouseup',    e => { e.preventDefault(); onUp(); });
+  el.addEventListener('mouseleave', e => { onUp(); });
+}
+
+setupBtn('btn-jump',
+  () => doJump(),
+  () => {}
+);
+setupBtn('btn-spin',
+  () => { keys['KeyN'] = true; },
+  () => { keys['KeyN'] = false; }
+);
 
 function playUpgradeSound(success) {
   if (!audioCtx) return;
